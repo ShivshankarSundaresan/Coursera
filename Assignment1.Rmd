@@ -1,0 +1,170 @@
+rm(list=ls())
+#started working on 14th july 2021.
+#reporoduciable research - coursera - Assignment 1
+
+library(knitr)
+
+
+
+
+
+
+#Importing data from CSV 
+data=read.csv("C:\\activity.csv",header=TRUE,sep=",")
+names(data)
+dim(data)
+
+
+#converting date into numeric - easy to subset
+
+data$date1=data$date
+data$date1=as.numeric(data$date1)
+table(data$date1)
+
+#subseting data according to each day
+for(i in 1:max(data$date1))
+{
+eval(parse(text=(paste0("data",i,"=","subset","(","data",',',"data$date1","==",i,")"))))
+} 
+
+#Renaming date1 as Day
+names(data)[names(data)=="date1"]="day"
+
+
+#########################################################################
+# Question 2
+#########################################################################
+
+
+
+#histogram Panel
+par(mfrow=c(8,8),mar=c(.2,.2,.2,.2))
+
+
+for(i in c(2:7,9:31,33:34,36:39,42:44,46:60))
+{
+eval(parse(text=(paste0("hist","(","data",i,"$","steps", ',main=c("")' ,    ")"))))
+} 
+
+
+
+#########################################################################
+# Question 3
+#########################################################################
+l=list()
+length(l)=61
+mean=numeric(61)
+median=numeric(61)
+
+for(i in 1:61)
+{
+eval(parse(text=(paste0("l[[i]]","=","summary","(","data",i,"$steps",")"))))
+
+median[i]=l[[i]][3]
+mean[i]=l[[i]][4]
+
+}
+
+
+
+summary_steps=data.frame(day=seq(1,61),mean,median)
+
+#########################################################################
+# Question 4
+#########################################################################
+summary_steps=subset(summary_steps,summary_steps$mean!="NaN")
+
+
+plot(summary_steps$day,summary_steps$mean,type="l",xlim=c(0,61),ylim=c(0,100),xlab="Day",ylab="Average steps taken per day",main="Time series plot")
+
+#########################################################################
+# Question 5
+#########################################################################
+
+data_max=subset(data,data$steps!="NA")#creating new data - excluding NA's
+
+
+max_steps_data=subset(data_max,data_max$steps==max(data_max$steps))
+
+max_steps_data
+
+#########################################################################
+# Question 6
+#########################################################################
+names(data_wide)
+data_wide=data[,c(1,3,4)]
+head(data_wide)
+
+data_wide=reshape(data_wide, idvar = "day", timevar = "interval", direction = "wide")
+
+
+##### Imputation of multiple columns (i.e. the whole data frame) #####
+ 
+for(i in 1:ncol(data_wide)) {
+  data_wide[ , i][is.na(data_wide[ , i])] <- mean(data_wide[ , i], na.rm = TRUE)
+}
+head(data_wide) # Check first 6 rows after substitution by mean
+names(data_wide)
+
+head(data_wide)
+data_long=reshape(data_wide,varying=list(names(data_wide)[2:289]),v.names="steps_new" ,idvar = "day",  direction = "long")
+
+
+
+data_long=arrange(data_long, data_long$day) 
+
+data$steps_new=data_long$steps_new
+data$steps_new=as.numeric(data$steps_new)
+
+
+
+#########################################################################
+# Question 7
+#########################################################################
+
+#Re-Creating datasets for each day after mean imputation
+for(i in 1:max(data$day))
+{
+eval(parse(text=(paste0("data",i,"=","subset","(","data",',',"data$day","==",i,")"))))
+}
+
+
+
+#histogram Panel after mean imputation
+
+
+par(mfrow=c(8,8),mar=c(.2,.2,.2,.2))  #Panel to hold 61 histograms
+
+#loop -> Histogram - Number of steps for each day
+for(i in c(1:61))
+{
+eval(parse(text=(paste0("hist","(","data",i,"$","steps_new", ',main=c("")' ,   ")"))))
+} 
+
+
+#########################################################################
+# Question 8
+#########################################################################
+data$date=as.Date(data$date,format="%Y-%m-%d") #converting date variable from factor to date format
+data$week = weekdays(data$date, abbreviate = FALSE) 
+data$week_type[data$week=="Saturday"|data$week=="Sunday"]<-"Weekend"
+data$week_type[is.na(data$week_type)]<-"Weekday"
+
+data_weekday=subset(data,data$week_type=="Weekday")
+data_weekend=subset(data,data$week_type=="Weekend")
+
+
+
+library(data.table)
+data_weekday1=setDT(data_weekday)[, .(meansteps = mean(steps_new)), by = interval]
+data_weekend1=setDT(data_weekend)[, .(meansteps = mean(steps_new)), by = interval]
+
+
+par(mfrow=c(2,1))
+plot(data_weekday1$interval,data_weekday1$meansteps,type="l",xlab="Interval",ylab="Average steps",main="Weekday",col="red")
+plot(data_weekend1$interval,data_weekend1$meansteps,type="l",xlab="Interval",ylab="Average steps",main="Weekend",col="blue")
+
+
+
+
+install.packages("tinytex")
